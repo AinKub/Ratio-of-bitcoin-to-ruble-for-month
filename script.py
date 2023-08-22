@@ -1,8 +1,9 @@
 from typing import List
+
+import psycopg2
 import requests
 
-
-TIMESERIES_URL = 'https://api.exchangerate.host/timeseries'
+from config import DATABASE, HOST, PASSWORD, PORT, TIMESERIES_URL, USERNAME
 
 
 def get_historical_rates_data(start_date: str, 
