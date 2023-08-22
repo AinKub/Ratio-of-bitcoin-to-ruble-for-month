@@ -43,3 +43,9 @@ if __name__ == '__main__':
                                                       '2023-08-22',
                                                       places=10)
     print(historical_rates_data)
+
+    connection = psycopg2.connect(host=HOST,
+                                  port=PORT,
+                                  user=USERNAME,
+                                  password=PASSWORD,
+                                  database=DATABASE)
