@@ -1,14 +1,5 @@
 version: '3.8'
 services:
-  app:
-    build: .
-    container_name: btc_to_rub
-    depends_on:
-      - db
-    links:
-      - db
-    entrypoint: "./wait-for-it.sh db:5432 -- python -m script"
-
   db:
     image: postgres:latest
     container_name: btc_to_rub_db
