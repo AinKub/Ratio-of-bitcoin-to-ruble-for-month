@@ -1,4 +1,5 @@
-from typing import Dict, List
+from datetime import date
+from typing import Dict, List, Tuple, Union
 
 import psycopg2
 import requests
@@ -13,6 +14,24 @@ def create_historical_rates_table(connection) -> None:
              'first_currency VARCHAR(3) NOT NULL, '
              'second_currency VARCHAR(3) NOT NULL, '
              'rate REAL NOT NULL)')
+    
+    cursor = connection.cursor()
+    cursor.execute(query)
+    connection.commit()
+    cursor.close()
+
+
+def create_result_data_mart(connection) -> None:
+    query = ('CREATE TABLE IF NOT EXISTS general_statistics_for_month ('
+             'max_rate_date DATE NOT NULL, '
+             'min_rate_date DATE NOT NULL, '
+             'max_rate REAL NOT NULL, '
+             'min_rate REAL NOT NULL, '
+             'avg_rate REAL NOT NULL, '
+             'last_date_rate REAL NOT NULL, '
+             'first_currency VARCHAR(3) NOT NULL, '
+             'second_currency VARCHAR(3) NOT NULL, '
+             'month_num VARCHAR(2) NOT NULL)')
     
     cursor = connection.cursor()
     cursor.execute(query)
@@ -37,6 +56,68 @@ def insert_historical_rates_to_db(connection,
     connection.commit()
     cursor.close()    
 
+
+def insert_statistics_into_data_mart(connection,
+                                     data_to_insert: Tuple):
+    
+    query = """INSERT INTO general_statistics_for_month (max_rate_date,
+                                                         min_rate_date,
+                                                         max_rate,
+                                                         min_rate,
+                                                         avg_rate,
+                                                         last_date_rate,
+                                                         first_currency,
+                                                         second_currency,
+                                                         month_num)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """
+    cursor = connection.cursor()
+    cursor.execute(query, data_to_insert)
+    connection.commit()
+    cursor.close()
+
+
+def get_analitics(connection
+                  ) -> Union[Tuple[date, date, float, float, float, float, str, str, str], None]:
+    
+    min_or_max_subqury = """SELECT rate, "date" 
+                            FROM historical_rates
+                            GROUP BY id, "date"
+                            ORDER BY rate {desc} LIMIT 1"""
+    
+    max_hr_subquery = min_or_max_subqury.format(desc='DESC')
+    min_hr_subquery = min_or_max_subqury.format(desc='')
+
+    avg_hr_subquery = 'SELECT AVG(rate) AS rate FROM historical_rates'
+    last_date_hr_subquery = """SELECT rate, "date", first_currency fc, second_currency sc
+                               FROM historical_rates
+                               ORDER BY "date" DESC LIMIT 1"""
+
+    query = """SELECT max_hr."date", 
+                      min_hr."date", 
+                      max_hr.rate, 
+                      min_hr.rate,
+                      avg_hr.rate, 
+                      last_date_hr.rate, 
+                      last_date_hr.fc, 
+                      last_date_hr.sc,
+                      to_char(last_date_hr."date", \'MM\')
+               FROM ({max_hr_subquery}) AS max_hr, 
+                    ({min_hr_subquery}) AS min_hr,
+                    ({avg_hr_subquery}) AS avg_hr,
+                    ({last_date_hr_subquery}) AS last_date_hr
+            """.format(
+        max_hr_subquery=max_hr_subquery,
+        min_hr_subquery=min_hr_subquery,
+        avg_hr_subquery=avg_hr_subquery,
+        last_date_hr_subquery=last_date_hr_subquery
+    )
+    cursor = connection.cursor()
+    cursor.execute(query)
+    result = cursor.fetchone()
+    cursor.close()
+    return result
+    
 
 def get_historical_rates_data(start_date: str, 
                               end_date: str,
@@ -72,7 +153,7 @@ def get_historical_rates_data(start_date: str,
 
 if __name__ == '__main__':
     historical_rates_data = get_historical_rates_data('2023-08-01',
-                                                      '2023-08-22',
+                                                      '2023-08-25',
                                                       places=10)
     print(historical_rates_data)
 
@@ -86,4 +167,7 @@ if __name__ == '__main__':
     insert_historical_rates_to_db(connection,
                                   base_currency='RUB',
                                   historical_rates=historical_rates_data['rates'])
+    result = get_analitics(connection)
+    create_result_data_mart(connection)
+    insert_statistics_into_data_mart(connection, result)
     connection.close()
