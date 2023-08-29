@@ -17,3 +17,24 @@
 - Запустить postgres (или через docker-compose, или другим удобным способом)
 - Создать виртуальное окружение и установить все необходимые библиотеки с помощью `pip install -r requirements.txt`
 - Запустить скрипт [script.py](./script.py)
+
+
+## Запуск в Airflow
+
+Для начала необходимо перейти в папку [airflow](./airflow/) (`cd airflow`). По желанию можно изменить `AIRFLOW_UID` в файле `.env` на любое другое число.
+
+Инициализация airflow и запуск выполняется при помощи команд:
+```
+# При использовании Linux систем может потребоваться выполнять эти команды, добавляя в начало `sudo`
+
+docker compose up airflow-init
+docker compose up
+```
+
+Веб-сервер после этого будет доступен по адресу http://localhost:8080/
+
+Нужно активировать DAG ratio_bitcoin_rub и после каждые 10 минут будет выводиться в вывод приветствие с помощью BashOperator
+
+![successful_dags](./img/successful_dags.png)
+
+![successgul_dags_logs](./img/successful_dags_logs.png)
