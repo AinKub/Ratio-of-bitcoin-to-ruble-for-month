@@ -41,3 +41,7 @@ docker compose up
 
 
 Tакже каждые 10 минут вытягиваются данные с `https://api.exchangerate.host/{конкретная_дата}` и заносятся в таблицу `historical_rates` базы данных сервиса db
+
+![successful_dags_2](./img/successful_dags_2.png)
+
+![ratio_inserting_result](./img/ratio_inserting_result.png)
